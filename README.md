@@ -9,16 +9,16 @@ Pada tugas pertemuan pertama ini, kita diminta untuk mengikuti tutorial yang tel
 <div>
 
 1. Tampilan Home-Page
-   ![Home-Page](../Tugas-1-PBKK_D/img/home-page.png)
+   ![Home-Page](img/home-page.png)
 
 2. Tampilan Blog-Page
-   ![Blog-Page](../Tugas-1-PBKK_D/img/blog-page.png)
+   ![Blog-Page](img/blog-page.png)
 
 3. Tampilan About Page
-   ![about-Page](../Tugas-1-PBKK_D/img/about-page.png)
+   ![about-Page](img/about-page.png)
 
 4. Tampilan Contact Page
-![contact-Page](../Tugas-1-PBKK_D/img/contact-page.png)
+![contact-Page](img/contact-page.png)
 </div>
 
 <div style="text-align:justify;">
@@ -142,8 +142,8 @@ Component terakhir yang kita miliki adalah [layout.blade.php](laravel11/resource
 
 ```
 
-*  ``<x-navbar>`` berfungsi untuk memanggil template navbar pada layout kita 
-*  ``<x-header>`` berfungsi untuk memanggil template header pada layout kita yang akan mempasing nilai variabel title dari route yang telah diberikan seperti sudah dijelaskan sebelumnya.
-* ``slot`` yang akan menyimpan perubahan yang terdapat pada masing masing file blade kita secara dinamis. Pada kasus kita maka nilai slot tersebut berupa **Ini adalah halaman Home**,**Ini adalah halaman Blog**,dan seterusnya. 
+- `<x-navbar>` berfungsi untuk memanggil template navbar pada layout kita
+- `<x-header>` berfungsi untuk memanggil template header pada layout kita yang akan mempasing nilai variabel title dari route yang telah diberikan seperti sudah dijelaskan sebelumnya.
+- `slot` yang akan menyimpan perubahan yang terdapat pada masing masing file blade kita secara dinamis. Pada kasus kita maka nilai slot tersebut berupa **Ini adalah halaman Home**,**Ini adalah halaman Blog**,dan seterusnya.
 
 </div>
