@@ -149,3 +149,171 @@ Component terakhir yang kita miliki adalah [layout.blade.php](laravel11/resource
 </div>
 
 # Tugas-2 PBKK D
+
+<div style="text-align:justify;">
+Pada tugas pertemuan kedua ini, kita diminta untuk membuat sebuah model yang akan mengirimkan data untuk kita tampilkan pada view post(article-page). Data yang kita miliki disimpan dalam sebuah model sehingga efektif karena tidak ada duplikasi penulisan kode.
+</div>
+
+<br>
+
+<div>
+
+1. Tampilan Blog-Page (Update)
+   ![Blog-Page](<img/blog-page(2).png>)
+
+2. Tampilan Article-Page
+   ![Artikel-1](img/artikel1.png)
+
+   ![Artikel-2](img/artikel2.png)
+   </div>
+
+<div style="text-align:justify;">
+Langkah pertama yang perlu kita lakukan yaitu membuat sebuah model, yang akan menyimpan data artikel yang akan kita tampilkan. Kita perlu membuat sebuah class bernama Post yang akan menjadi model kita.
+</div>
+
+```php
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Support\Arr;
+
+class Post
+{
+    public static function all()
+    {
+        return [
+            [
+                'id' => 1,
+                'slug' => 'judul-artikel-1',
+                'title' => 'Judul Artikel 1',
+                'author' => 'Sandhika Galih',
+                'body' => 'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Velit, fugit dignissimos
+                accusantium corrupti dicta
+                voluptatem consectetur sed aliquam in ratione, neque modi voluptatum pariatur quis? Ad maiores neque tempora
+                impedit.'
+            ],
+            [
+                'id' => 2,
+                'slug' => 'judul-artikel-2',
+                'title' => 'Judul Artikel 2',
+                'author' => 'Sandhika Galih',
+                'body' => 'Lorem ipsum dolor sit amet consectetur adipisicing elit. Natus ab amet distinctio
+                iusto facere ullam doloremque corporis nihil et quia odio modi, maiores eius. Commodi enim laudantium
+                voluptates cumque eum.'
+            ]
+        ];
+    }
+
+    public static function find($slug):array
+    {
+        $post= Arr::first(static::all(), fn($post) => $post['slug'] == $slug);
+
+        if(!$post){
+            abort(404);
+        }
+        return $post;
+    }
+}
+
+?>
+
+```
+
+<div style="text-align:justify;">
+
+Pada class Post ini terdapat 2 fungsi yaitu fungsi **all()** dan fungsi **find()**. Berikut penjelasan dari masing - masing fungsi tersebut:
+
+- `Fungsi all()`: berfungsi untuk menyimpan semua data artikel yang kita miliki.
+
+- `Fungsi find()`: berfungsi untuk mengembalikan artikel sesuai dengan nilai slug yang diberikan.
+
+**Slug** disini berfungsi sebagai identitas pengenal dari masing - masing artikel yang unique. Slug juga akan menjadi url dari masing - masing artikel yang kita miliki sebagai contoh dalam kasus artikel 1 maka url dari artikel tersebut yaitu `posts/judul-artikel-1`
+
+Agar class Post kita dapat diakses oleh route yang kita miliki maka kita perlu menambahkan namespace. Sehingga pada route kita dapat menambahkan `use App\Models\Post;` agar dapat mengakses class Post yang telah kita buat pada model.
+
+Pada fungsi find kita juga dapat menambahkan logika percabangan untuk mengatasi url yang tidak sesuai. Kita menggunakan fungsi abort yang telah disediakan oleh laravel sehingga ketika url yang diberikan tidak sesuai maka akan mengembalikan tampilan **page not found**
+
+![page-not-found](img/page-not-found.png)
+
+</div>
+
+<div style="text-align:justify;">
+
+Kita juga perlu menambahkan sebuah variabel pada route posts (sebelumnya merupakan route blog) untuk menyimpan semua artikel yang kita miliki dalam model. Kita menggunakan fungsi **all()** untuk mengembalikan semua artikel lalu menyimpannya ke dalam variabel posts.
+
+```php
+
+Route::get('/posts', function () {
+    return view('posts', ['title' => 'Blog', 'posts' => Post::all()]);
+});
+
+```
+
+Kemudian kita menampilkannya ke dalam view posts menggunakan **@foreach** lalu memasukan nilai dari array post yang kita miliki. Penggunaan foreach digunakan agar tidak terdapat duplikasi dalam penulisan kode.
+
+```html
+<x-layout>
+  <x-slot:title> {{ $title }} </x-slot:title>
+  @foreach ($posts as $post)
+  <article class="py-8 max-w-screen-md border-b border-gray-300">
+    <a href="/posts/{{ $post['slug'] }}" class="hover:underline">
+      <h2 class="font-bold mb-1 text-3xl tracking-tight text-gray-900">
+        {{ $post['title'] }}
+      </h2>
+    </a>
+    <div class="text-base text-gray-500 hover:underline">
+      <a href="#"> {{ $post['author'] }} | 1 January 2024 </a>
+    </div>
+    <p class="my-4 font-light">{{ Str::limit($post['body'], 150) }}</p>
+    <a
+      href="/posts/{{ $post['slug'] }}"
+      class="font-medium text-blue-500 hover:underline"
+      >Read More &raquo;</a
+    >
+  </article>
+  @endforeach
+</x-layout>
+```
+
+Kemudian untuk navigasi dari masing - masing artikel, kita akan mempassing nilai dari masing - masing slug yang dimiliki oleh artikel sebagai contoh `posts/judul-artikel-1`. Namun, kita sebelumnya kita perlu menambahkan route yang akan menyimpan nilai slug yang telah dipassing sebelumnya.
+
+</div>
+
+```php
+
+Route::get('/posts/{slug}', function ($slug) {
+    $post = Post::find($slug);
+
+
+    return view('post',['title' => 'Article','post' => $post]);
+});
+
+```
+
+<div style="text-align:justify;">
+
+Dalam kode tersebut terlihat bahwa semua url yang tertulis setelah **/posts** akan disimpan ke dalam slug. Lalu kita memanfaatkan slug tersebut untuk digunakan ke dalam fungsi **find()** di dalam class Post yang telah kita buat. Setelah kita mendapatkan nilai dari fungsi **find()** kita akan memanggil sebuah view yang akan menampilkan artikel sesuai slug yang telah diberikan. Berikut adalah potongan kode dari view post:
+
+```html
+<x-layout>
+  <x-slot:title> {{ $title }} </x-slot:title>
+  <article class="py-8 max-w-screen-md">
+    <h2 class="font-bold mb-1 text-3xl tracking-tight text-gray-900">
+      {{ $post['title'] }}
+    </h2>
+    <div class="text-base text-gray-500 hover:underline">
+      <a href="#"> {{ $post['author'] }} | 1 January 2024 </a>
+    </div>
+    <p class="my-4 font-light">{{ $post['body'] }}</p>
+    <a href="/posts" class="font-medium text-blue-500 hover:underline"
+      >&laquo; Read More</a
+    >
+  </article>
+</x-layout>
+```
+
+View post ini akan menampilkan artikel sesuai dengan nilai slug yang telah dipassing pada route.
+
+</div>
