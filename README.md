@@ -147,3 +147,5 @@ Component terakhir yang kita miliki adalah [layout.blade.php](laravel11/resource
 - `slot` yang akan menyimpan perubahan yang terdapat pada masing masing file blade kita secara dinamis. Pada kasus kita maka nilai slot tersebut berupa **Ini adalah halaman Home**,**Ini adalah halaman Blog**,dan seterusnya.
 
 </div>
+
+# Tugas-2 PBKK D
