@@ -317,3 +317,126 @@ Dalam kode tersebut terlihat bahwa semua url yang tertulis setelah **/posts** ak
 View post ini akan menampilkan artikel sesuai dengan nilai slug yang telah dipassing pada route.
 
 </div>
+
+# Tugas-3 PBKK D
+
+<div style="text-align:justify;">
+Pada tugas pertemuan ketiga ini, kita diminta untuk menampilkan artikel yang telah kita buat dipertemuan sebelumnya menggunakan database. Berikut adalah tampilan dari page yang telah dibuat:
+</div>
+
+<br>
+
+<div>
+
+1. Tampilan Blog-Page (Menggunakan Database)
+
+   ![Blog-Page](img/tampilan-blog-database.png)
+
+2. Tampilan Article-Page (Menggunakan Database)
+
+   ![Artikel-1](img/tampilan-single-article.png)
+
+   </div>
+
+<div style="text-align:justify;">
+
+Tidak ada perubahan yang signifakan pada tampilan UI dari page tersebut. Namun perbedaannya adalah saat ini kita menggunakan database untuk menyimpan data dari artikel yang kita miliki. Agar kita dapat menghubungkannya ke database kita langkah pertama yang harus kita lakukan adalah mengubah config dari laravel yang kita miliki.
+
+</div>
+
+![env](img/env.png)
+
+<div style="text-align:justify;">
+
+Karena disini saya menggunakan sqlite jadi disini `DB_CONNECTION` harus diatur menjadi sqlite sehingga sqlite yang kita gunakan sudah terhubung dengan web yang kita buat.
+
+</div>
+
+<div style="text-align:justify;">
+
+Kemudian kita harus membaut sebuah model yang terhubung langsung dengan migration yang akan kita buat. Untuk membuat demikian kita dapat memanfaatkan php artisan untuk membuat model yang terhubung langsung dengan migrationnya. Kita dapat melakukannya dengan menjalankan command:
+
+</div>
+
+```bash
+
+php artisan make:Model Post -m
+
+```
+
+<div style="text-align:justify;">
+
+Lalu kita perlu melakukan modifikasi sedikit pada model Post kita dimana sebelumnya kita menggunakan fungsi all() dan fungsi find() yang mana kita tidak membutuhkan fungsi itu lagi karena fungsi tersebut sudah disediakan langsung oleh class Model yang akan kita extend pada class Post kita.
+
+```php
+
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Post extends Model
+{
+    use HasFactory;
+    protected $fillable=['slug','title','author','body'];
+}
+
+
+```
+
+Potongan kode `protected $fillable` disini berfungsi untuk menandai field mana yang dapat kita isi (dalam kasus ini saya menggunakan php artisan tinker) sehingga field lainnya seperti id,created_at, dan updated_at akan diisi secara otomatis.
+
+Lalu untuk route yang kita gunakan untuk menampilkan masing - masing artikel dimana sebelumnya kita menggunakan fungsi find() juga sudah disediakan oleh class Model tersebut sehingga penulisan pada route kita modifikasi menjadi seperti ini
+
+</div>
+
+```php
+
+Route::get('/posts/{post:slug}', function (Post $post) {
+    return view('post',['title' => 'Article','post' => $post]);
+});
+
+```
+
+<div style="text-align:justify;">
+
+Dalam kode tersebut kita dapat langsung mengambil `post:slug` sehingga kita tidak memerlukan fungsi find lagi.
+
+Untuk melakukan insert data ke dalam database saya menggunakan php artisan tinker. Kemudian kita dapat menjalankan command sebagai berikut:
+
+```php
+
+App\Models\Post::create([
+  'title' => 'Menghadapi Tantangan Dunia Kerja di Era Digital',
+  'author' => 'Rizky Pratama',
+  'slug' => 'menghadapi-tantangan-dunia-kerja-era-digital',
+  'body' => 'Era digital membawa perubahan signifikan dalam dunia kerja. Artikel ini membahas tantangan utama yang dihadapi pekerja dan perusahaan di era digital, serta strategi untuk tetap relevan dan kompetitif dalam menghadapi perkembangan teknologi.'
+
+]);
+
+```
+
+Jika telah berhasil, maka akan muncul tampilan sebagai berikut:
+
+![tinker](img/php_artisan_tinker.png)
+
+Data akan otomatis masuk ke dalam database kita. 
+
+![database_contoh](img/database_contoh.png)
+
+Dan web kita akan secara otomatis menampilkan artikel yang kita masukan ke dalam database
+
+![tambahan_artikel](img/tambahan_artikel.png)
+
+
+Lalu untuk waktu postingan dari artikel kita, kita dapat memanfaatkan field ``created_at`` sehingga potongan kode dari view post kita menjadi sebagai berikut:
+
+```html
+
+<a href="#"> {{ $post['author'] }} | {{ $post->created_at->diffForHumans() }} </a>
+
+```
+
+</div>
