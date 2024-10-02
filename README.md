@@ -422,7 +422,7 @@ Jika telah berhasil, maka akan muncul tampilan sebagai berikut:
 
 ![tinker](img/php_artisan_tinker.png)
 
-Data akan otomatis masuk ke dalam database kita. 
+Data akan otomatis masuk ke dalam database kita.
 
 ![database_contoh](img/database_contoh.png)
 
@@ -430,13 +430,591 @@ Dan web kita akan secara otomatis menampilkan artikel yang kita masukan ke dalam
 
 ![tambahan_artikel](img/tambahan_artikel.png)
 
-
-Lalu untuk waktu postingan dari artikel kita, kita dapat memanfaatkan field ``created_at`` sehingga potongan kode dari view post kita menjadi sebagai berikut:
+Lalu untuk waktu postingan dari artikel kita, kita dapat memanfaatkan field `created_at` sehingga potongan kode dari view post kita menjadi sebagai berikut:
 
 ```html
-
-<a href="#"> {{ $post['author'] }} | {{ $post->created_at->diffForHumans() }} </a>
-
+<a href="#">
+  {{ $post['author'] }} | {{ $post->created_at->diffForHumans() }}
+</a>
 ```
 
 </div>
+
+# Tugas-4 PBKK D
+
+<div style="text-align:justify;">
+
+Pada tugas pertemuan kali ini, kita diminta untuk membuat sebuah _data dummy_ untuk ditampilkan pada page blog. Kita juga mempelajari tentang eloquent relationship yang akan diterapkan pada database yang kita miliki. Relasi yang kita miliki yaitu berupa **One-to-Many** pada tabel `Posts-User` dan `Posts-Category`.
+
+</div>
+
+<br>
+
+<div>
+
+1. Tampilan Blog-Page
+
+   ![Blog-Page](<img/blog-page(factory).png>)
+
+2. Tampilan Author-Page
+
+   ![Author-Page](img/author-page.png)
+
+3. Tampilan Category-Page
+
+   ![Category-Page](img/category-page.png)
+
+</div>
+
+<div style="text-align:justify;">
+
+Tidak terdapat perubahan pada halaman blog, hanya saya sebelumnya kita melakukan input ke dalam database dengan cara manual, kali ini kita menggunakan factory yang akan membuat data dummy langsung untuk kita. Kita juga menambahkan halaman author yang akan menampilkan artikel apa saja yang dimiliki oleh author tertentu. Kita juga menambahkan halaman category yang akan menambahkan artikel apa saja yang masuk dalam kategori tertentu. Untuk melakukan itu, langkah yang pertama perlu kita lakukan adalah mengubah migration yang kita miliki.
+
+</div>
+
+```php
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('posts', function (Blueprint $table) {
+            $table->id();
+            $table->string('slug')->unique();
+            $table->string('title');
+            $table->foreignId('author_id')->constrained(
+                table: 'users', indexName: 'posts_author_id'
+            );
+            $table->foreignId('category_id')->constrained(
+                table: 'categories', indexName: 'posts_category_id'
+            );
+            $table->text('body');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('posts');
+    }
+};
+
+```
+
+<div style="text-align:justify;">
+
+Kita perlu menambahkan kolom baru untuk menyimpan author_id dan category_id sebagai foreign key yang akan kita gunakan untuk menampilkan artikel apa saja yang dimiliki oleh user tertentu atau kategori tertentu. Kemudian pada tabel user kita menambahkan username yang akan kita manfaatkan sebagai route kita.
+
+</div>
+
+```php
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('users', function (Blueprint $table) {
+            $table->id();
+            $table->string('name');
+            $table->string('username')->unique();
+            $table->string('email')->unique();
+            $table->timestamp('email_verified_at')->nullable();
+            $table->string('password');
+            $table->rememberToken();
+            $table->timestamps();
+        });
+
+        Schema::create('password_reset_tokens', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
+        });
+
+        Schema::create('sessions', function (Blueprint $table) {
+            $table->string('id')->primary();
+            $table->foreignId('user_id')->nullable()->index();
+            $table->string('ip_address', 45)->nullable();
+            $table->text('user_agent')->nullable();
+            $table->longText('payload');
+            $table->integer('last_activity')->index();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('users');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('sessions');
+    }
+};
+
+```
+
+<div style="text-align:justify;">
+
+Dan yang terakhir kita perlu menambahkan tabel category seperti berikut:
+
+</div>
+
+```php
+
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('categories', function (Blueprint $table) {
+            $table->id();
+            $table->string('slug')->unique();
+            $table->string('name_category');
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('categories');
+    }
+};
+
+```
+
+<div style="text-align:justify;">
+
+Setelah itu kita perlu membuat relasi antar model sesuai dengan design database yang kita inginkan. **Model Post** kita akan memiliki `BelongsTo` terhadap **model user** dan **model category**, sedangkan **model user** dan **model category** memiliki `HasMany` terhadap **model post**. Berikut potongan kode pada **Model Post,User, dan Category**
+
+</div>
+
+```php
+
+<?php
+// Model Post
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+
+class Post extends Model
+{
+    use HasFactory;
+    protected $fillable=['slug','title','author_id','body','category_id'];
+
+    public function author():BelongsTo{
+        return $this->belongsTo(User::class);
+    }
+    public function category():BelongsTo{
+        return $this->belongsTo(Category::class);
+    }
+}
+
+```
+
+```php
+
+<?php
+// Model User
+namespace App\Models;
+
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Post;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+
+class User extends Authenticatable
+{
+    use HasFactory, Notifiable;
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'name',
+        'email',
+        'password',
+    ];
+
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'email_verified_at' => 'datetime',
+            'password' => 'hashed',
+        ];
+    }
+    public function posts(): HasMany
+    {
+        return $this->hasMany(Post::class,'author_id');
+    }
+}
+
+```
+
+```php
+
+<?php
+// Model Category
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class Category extends Model
+{
+    use HasFactory;
+
+    protected $fillable=['slug','name_category'];
+
+    public function posts():HasMany{
+        return $this->hasMany(Post::class,'category_id');
+    }
+}
+
+```
+
+<div style="text-align:justify;">
+
+Kemudian untuk membuat data dummy kita menggunakan factory. Pada factory, kita menentukan bahwa kolom - kolom tersebut ingin kita isi data apa saja sehingga ketika kita menjalankan factory tersebut kolom akan terisi data otomatis sesuai dengan nilai yang kita inginkan. Berikut potongan kode dari masing - masing factory:
+
+</div>
+
+```php
+// PostFactory
+<?php
+
+namespace Database\Factories;
+
+use App\Models\Category;
+use App\Models\User;
+use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Post>
+ */
+class PostFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'title'=>fake()->sentence(),
+            'slug'=>Str::slug(fake()->sentence()),
+            'author_id'=>User::factory(),
+            'category_id'=>Category::factory(),
+            'body'=>fake()->text()
+        ];
+    }
+}
+
+```
+
+```php
+// UserFactory
+<?php
+
+namespace Database\Factories;
+
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ */
+class UserFactory extends Factory
+{
+    /**
+     * The current password being used by the factory.
+     */
+    protected static ?string $password;
+
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'name' => fake()->name(),
+            'username' => fake()->unique()->userName(),
+            'email' => fake()->unique()->safeEmail(),
+            'email_verified_at' => now(),
+            'password' => static::$password ??= Hash::make('password'),
+            'remember_token' => Str::random(10),
+        ];
+    }
+
+    /**
+     * Indicate that the model's email address should be unverified.
+     */
+    public function unverified(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'email_verified_at' => null,
+        ]);
+    }
+
+}
+
+
+```
+
+```php
+// CategoryFactory
+<?php
+
+namespace Database\Factories;
+
+use Illuminate\Support\Str;
+use Illuminate\Database\Eloquent\Factories\Factory;
+
+/**
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Category>
+ */
+class CategoryFactory extends Factory
+{
+    /**
+     * Define the model's default state.
+     *
+     * @return array<string, mixed>
+     */
+    public function definition(): array
+    {
+        return [
+            'slug'=>Str::slug(fake()->sentence()),
+            'name_category'=>fake()->words(3,true)
+        ];
+    }
+}
+
+```
+
+<div style="text-align:justify;">
+
+Disini terlihat bahwa kita menggunakan `fake()`.Fungsi fake() disini akan membuat data dummy sesuai dengan kategori yang kita inginkan. Dokumentasinya dapat kita lihat pada *https://fakerphp.org/*.
+
+Kemudian untuk menjalankan factory secara otomatis kita dapat menggunakan seeder. Sehingga kita tidak perlu lagi menggunakan `php artisan tinker` yang sekarang akan digantikan dengan seeder. Disini saya menambahkan seeder baru yaitu `UserSeeder` dan `CategorySeeder`, berikut potongan kode dari masing - masing seeder:
+
+</div>
+
+```php
+
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\User;
+use Illuminate\Support\Str;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+
+class UserSeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        User::create([
+            'name'=>'Willyam Brordus',
+            'username'=>'Iyemmmm',
+            'email'=>'willyambrordus@gmail.com',
+            'email_verified_at'=>now(),
+            'password'=>Hash::make('password'),
+            'remember_token'=>Str::random(10)
+        ]);
+
+        User::factory(5)->create();
+    }
+}
+
+```
+
+```php
+
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Category;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+
+class CategorySeeder extends Seeder
+{
+    /**
+     * Run the database seeds.
+     */
+    public function run(): void
+    {
+        Category::create([
+            'name_category'=>'Object Oriented Programming',
+            'slug'=>'object-oriented-programming'
+        ]);
+        Category::create([
+            'name_category'=>'Machine Learning',
+            'slug'=>'machine-learning'
+        ]);
+        Category::create([
+            'name_category'=>'Architecture Computer',
+            'slug'=>'architecture-computer'
+        ]);
+        Category::create([
+            'name_category'=>'Mobile Programming',
+            'slug'=>'mobile-programming'
+        ]);
+        Category::create([
+            'name_category'=>'Operation System',
+            'slug'=>'operation-system'
+        ]);
+        Category::create([
+            'name_category'=>'Data Structure',
+            'slug'=>'data-structure'
+        ]);
+    }
+}
+
+```
+
+<div style="text-align:justify;">
+
+Pada `UserSeeder` saya membuat 1 user secara manual, lalu sisanya saya membuat 5 user secara random sesuai dengan factory yang telah saya buat sebelumnya. Kemudian pada `CategorySeeder` saya membuat 5 kategori secara manual agar hasil yang didapatkan lebih terlihat realistis saja. Kemudian kita menggabungkan pada `DatabaseSeeder` dengan memanggil fungsi `call()`, lalu kita jalankan perintah factory seperti potongan kode berikut:
+
+</div>
+
+```php
+
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Post;
+// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use App\Models\User;
+use App\Models\Category;
+use Illuminate\Database\Seeder;
+
+class DatabaseSeeder extends Seeder
+{
+    /**
+     * Seed the application's database.
+     */
+    public function run(): void
+    {
+        // User::factory(10)->create();
+        $this->call([CategorySeeder::class, UserSeeder::class]);
+        Post::factory(100)->recycle([
+            Category::all(),
+            User::all()
+        ])->create();
+    }
+}
+
+```
+
+<div style="text-align:justify;">
+
+Untuk menjalankan seeder tersebut kita qakan menggunakan command `db:seed` dan data akan masuk ke dalam database kita.
+
+</div>
+
+![DatabaseSeeder](img/seeder.png)
+
+<div style="text-align:justify;">
+
+Kemudian disini saya menambahkan **Author Page** dan **Category Page** dimana pada view posts saya menavigasikan nama author dengan nilai `/Author/username` dan categorynya dengan nilai `/Category/slug`. Berikut potongan kode tersebut:
+
+</div>
+
+```html
+<div class="text-base text-gray-500">
+  <a href="/authors/{{ $post->author->username }}" class="hover:underline">
+    {{ $post->author->name }}</a
+  >
+  <a
+    href="/categories/{{ $post->category->name_category }}"
+    class="hover:underline"
+    >in {{ $post->category->name_category }}</a
+  >
+  | {{ $post->created_at->diffForHumans() }}
+</div>
+```
+
+<div style="text-align:justify;">
+
+Kemudian kita membuat route untuk menjalankan path tersebut.
+
+</div>
+
+```php
+
+Route::get('/authors/{user:username}', function (User $user) {
+    return view('posts',['title' => count($user->posts).' Articles by '. $user->name,'posts' => $user->posts]);
+});
+Route::get('/categories/{category:name_category}', function (Category $category) {
+    return view('posts',['title' => 'Category: '. $category->name_category,'posts' => $category->posts]);
+});
+
+```
+
