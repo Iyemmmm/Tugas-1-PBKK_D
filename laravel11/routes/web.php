@@ -11,7 +11,7 @@ Route::get('/', function () {
 });
 
 Route::get('/posts', function () {
-    return view('posts', ['title' => 'Blog', 'posts' => Post::all()]);
+    return view('posts', ['title' => 'Blog', 'posts' => Post::filter(request(['search','category','author']))->latest()->paginate(10)->withQueryString()]);
 });
 Route::get('/posts/{post:slug}', function (Post $post) {
     return view('post',['title' => 'Article','post' => $post]);

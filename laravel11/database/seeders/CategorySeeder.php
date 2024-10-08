@@ -14,28 +14,24 @@ class CategorySeeder extends Seeder
     public function run(): void
     {
         Category::create([
-            'name_category'=>'Object Oriented Programming',
-            'slug'=>'object-oriented-programming'
+            'name_category' => 'Object Oriented Programming',
+            'slug' => 'object-oriented-programming',
+            'color' => 'red'
         ]);
         Category::create([
-            'name_category'=>'Machine Learning',
-            'slug'=>'machine-learning'
+            'name_category' => 'Machine Learning',
+            'slug' => 'machine-learning',
+            'color'=>'blue'
         ]);
         Category::create([
-            'name_category'=>'Architecture Computer',
-            'slug'=>'architecture-computer'
+            'name_category' => 'Architecture Computer',
+            'slug' => 'architecture-computer',
+            'color'=>'green'
         ]);
         Category::create([
-            'name_category'=>'Mobile Programming',
-            'slug'=>'mobile-programming'
-        ]);
-        Category::create([
-            'name_category'=>'Operation System',
-            'slug'=>'operation-system'
-        ]);
-        Category::create([
-            'name_category'=>'Data Structure',
-            'slug'=>'data-structure'
+            'name_category' => 'Mobile Programming',
+            'slug' => 'mobile-programming',
+            'color'=>'yellow'
         ]);
     }
 }
