@@ -1018,3 +1018,250 @@ Route::get('/categories/{category:name_category}', function (Category $category)
 
 ```
 
+# Tugas-5 PBKK D
+
+<div style="text-align:justify;">
+
+Pada tugas kali ini kita akan, membahas tentang masalah `N+1`. Masalah `N+1` terjadi ketika kita melakukan query pada tabel yang memiliki relasi yang ditampilkan ketika melakukan **foreach** sehingga apabila kita memiliki 100 data maka kita juga akan melakukan query sebanyak 100 kali. Hal tersebut dapat menurunkan performa dari aplikasi yang sedang kita bangun. Oleh karena itu untuk mengatasinya kita menggunakan Eager Loading. Pada model yang kita miliki kita tambahkan variabel `with` yang menyimpan tabel yang akan menggunakan `Eager Loading`.
+
+</div>
+
+```php
+
+protected $with = ['author', 'category'];
+
+```
+
+<div style="text-align:justify;">
+
+Kita dapat mengetahui berapa total query yang kita lakukan menggunakan debug bar seperti tampilan berikut:
+
+</div>
+
+![debug_bar](img/debug_bar.png)
+
+<div style="text-align:justify;">
+
+Disini dapat kita lihat yang sebelumnya kita melakukan query sebanyak 200 kali namun menggunakan `Eager Loading` tersebut kita hanya melakukan query sebanyak 7 kali saja.
+
+Kemudian pada tugas kali, ini kita juga melakukan Redesign dari UI nya yang mana sebelumnya kita menampilkan artikelnya menggunakan list namun pada kali ini kita menampilkan artikel - artikel tersebut dalam bentuk seperti card. Kita menggunakan component yang dimiliki oleh flowbite. Berikut tampilan UI nya:
+
+</div>
+
+![redesign_blog](img/redesign.png)
+
+<div style="text-align:justify;">
+
+Agar tampilan UI nya dapat dijalankan kita perlu menambahkan config pada file tailwind.config.js seperti berikut :
+
+```js
+content: [
+  "./resources/**/*.blade.php",
+  "./resources/**/*.js",
+  "./resources/**/*.vue",
+  "./node_modules/flowbite/**/*.js",
+];
+```
+
+Kita memasukan potongan kode dari flow bite ke dalam view posts kita. Berikut potongan kode yang ditambahkan:
+
+```html
+@forelse ($posts as $post)
+<article
+  class="p-6 bg-white rounded-lg border border-gray-200 shadow-md dark:bg-gray-800 dark:border-gray-700"
+>
+  <div class="flex justify-between items-center mb-5 text-gray-500">
+    <a href="/posts?category={{ $post->category->slug }}">
+      <span
+        class="bg-{{ $post->category->color }}-100 text-primary-800 text-xs font-medium inline-flex items-center px-2.5 py-0.5 rounded dark:bg-primary-200 dark:text-primary-800"
+      >
+        {{ $post->category->name_category }}
+      </span>
+    </a>
+    <span class="text-sm">{{ $post->created_at->diffForHumans() }}</span>
+  </div>
+  <h2
+    class="mb-2 text-2xl font-bold tracking-tight text-gray-900 dark:text-white hover:underline"
+  >
+    <a href="/posts/{{ $post['slug'] }}">{{ $post->title }}</a>
+  </h2>
+  <p class="mb-5 font-light text-gray-500 dark:text-gray-400">
+    {{ Str::limit($post->body, 150) }}
+  </p>
+  <div class="flex justify-between items-center">
+    <div class="flex items-center space-x-4">
+      <img
+        class="w-7 h-7 rounded-full"
+        src="https://flowbite.s3.amazonaws.com/blocks/marketing-ui/avatars/jese-leos.png"
+        alt="Jese Leos avatar"
+      />
+      <a
+        href="/posts?author={{ $post->author->username }}"
+        class="hover:underline"
+      >
+        <span class="font-medium dark:text-white">
+          {{ $post->author->name }}
+        </span>
+      </a>
+    </div>
+    <a
+      href="/posts/{{ $post['slug'] }}"
+      class="inline-flex items-center font-medium text-primary-600 dark:text-primary-500 hover:underline"
+    >
+      Read more
+      <svg
+        class="ml-2 w-4 h-4"
+        fill="currentColor"
+        viewBox="0 0 20 20"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          fill-rule="evenodd"
+          d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"
+          clip-rule="evenodd"
+        ></path>
+      </svg>
+    </a>
+  </div>
+</article>
+@empty
+<div>
+  <h2 class="text-2xl font-semibold">Article Not Found</h2>
+  <a href="/posts" class="hover:underline text-blue-600"
+    >&laquo; Back to Post</a
+  >
+</div>
+@endforelse
+```
+
+Untuk menambahkan _background color_ yang berbeda dari masing - masing category kita menambahkan 1 kolom baru pada tabel kategori untuk menyimpan nilai dari warna masing category kita. Berikut migrasi dari tabel category:
+
+```php
+
+        Schema::create('categories', function (Blueprint $table) {
+            $table->id();
+            $table->string('slug')->unique();
+            $table->string('name_category');
+            $table->string('color');
+            $table->timestamps();
+        });
+
+```
+
+Namun, agar dapat menerapkannya kita perlu menambahkan config lagi pada tailwind.config.js sesuai dengan warna - warna yang kita masukan ke dalam database kita.
+
+```js
+safelist: ["bg-red-100", "bg-blue-100", "bg-green-100", "bg-yellow-100"];
+```
+
+Lalu kita menambahkan search bar untuk mencari artikel yang kita inginkan. Kita menambahkan view terpisah yang bernama `search.blade.php`. Berikut adalah potongan kode dari view kita:
+
+```html
+<div class="py-4 px-4 mx-auto max-w-screen-xl lg:px-6">
+  <div class="mx-auto max-w-screen-md sm:text-center">
+    <form action="/posts" method="GET">
+      @if (request('category'))
+      <input type="hidden" value="{{ request('category') }}" name="category" />
+      @endif @if (request('author'))
+      <input type="hidden" value="{{ request('author') }}" name="author" />
+      @endif
+      <div
+        class="items-center mx-auto mb-3 space-y-4 max-w-screen-sm sm:flex sm:space-y-0"
+      >
+        <div class="relative w-full">
+          <label
+            for="search"
+            class="hidden mb-2 text-sm font-medium text-gray-900 dark:text-gray-300"
+            >Search</label
+          >
+          <div
+            class="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none"
+          >
+            <svg
+              class="w-5 h-5 text-gray-500 dark:text-gray-400"
+              aria-hidden="true"
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke="currentColor"
+                stroke-linecap="round"
+                stroke-width="2"
+                d="m21 21-3.5-3.5M17 10a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"
+              />
+            </svg>
+          </div>
+          <input
+            class="block p-3 pl-10 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 sm:rounded-none sm:rounded-l-lg focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
+            placeholder="Search for article"
+            type="search"
+            id="search"
+            name="search"
+            autocomplete="off"
+          />
+        </div>
+        <div>
+          <button
+            type="submit"
+            class="py-3 px-5 w-full text-sm font-medium text-center text-white rounded-lg border cursor-pointer bg-primary-700 border-primary-600 sm:rounded-none sm:rounded-r-lg hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 dark:bg-primary-600 dark:hover:bg-primary-700 dark:focus:ring-primary-800"
+          >
+            Search
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+```
+
+Lalu kita menambahkan `<x-search></x-search>` pada `posts.blade.php`. Agar search kita dapat berjalan maka kita perlu menambahkan function `scopeFilter` pada model **Post** kita. Kita membuat fungsi search yang dapat mem-filter ketika kita sedang akses category dan author juga bukan hanya pada posts saja sehingga ketika kita lakukan search ketika berada pada kategory tertentu maka artikel - artikel yang ditampilkan hanya pada kategori itu saja. Berikut potongan kode fungsi tersebut:
+
+```php
+
+    public function scopeFilter(Builder $query, array $filters)
+    {
+        $query->when(
+            $filters['search'] ?? false,
+            fn($query, $search) =>
+            $query->where('title', 'like', '%' . $search . '%')
+        );
+        $query->when($filters['category'] ?? false, fn ($query, $category)=>
+            $query->whereHas('category', fn ($query)=>
+                $query->where('slug', 'like', $category)
+            )
+        );
+        $query->when($filters['author'] ?? false, fn ($query, $author)=>
+            $query->whereHas('author', fn ($query)=>
+                $query->where('username', 'like', $author)
+            )
+        );
+    }
+
+```
+
+Kita juga menambahkan input hidden pada search bar kita untuk memberi tahu apakah kita sedang di page category dan author atau tidak.
+
+```php
+      @if (request('category'))
+      <input type="hidden" value="{{ request('category') }}" name="category" />
+      @endif @if (request('author'))
+      <input type="hidden" value="{{ request('author') }}" name="author" />
+      @endif
+```
+
+Berikut contoh UI ketika melakukan search:
+
+![search_found](/img/search_found.png)
+
+Seperti yang dapat kita lihat artikel tersebut memiliki kategori **Object Oriented Programming** sehingga apabila kita melakukan search artikel tersebut pada kategori yang lain maka artikel tersebut tidak akan muncul. Berikut contoh UI ketika tidak ditemukan artikel yang dicari:
+
+![search_not_found](/img/search_not_found.png)
+
+Kemudian yang terakhir kita menambahkan pagination. Laravel sangat memudahkan kita untuk membuat kita hanya perlu menambahkan pada **Route** kita **paginate()** dan juga **withQueryString()** agar page yang ditampilkan sesuai dengan route kita saat ini. Kita dapat mengatur berapa banyak paginate yang kita inginkan dengan memberikan nilai pada paginate kita seperti **paginate(5)** maka akan ditampilkan hanya 5 artikel saja. Kemudian kita menambahkan `{{ $posts->links() }}` pada view yang ingin kita gunakan paginate. Kemudian agar paginate yang kita miliki memiliki tampilan yang baik kita perlu menambahkan config `'./vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php',` pada **tailwind.config.js**. Berikut tampilan UI dari pagination kita (**10 per page**):
+
+![paginate](img/pagination.png)
+
+</div>
